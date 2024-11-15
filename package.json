@@ -5,7 +5,7 @@
   "main": "api/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "api/index.js",
+    "build": "webpack",
     "start": "node api/index.js"
   },
   "keywords": [],
