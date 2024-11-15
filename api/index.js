@@ -1,4 +1,5 @@
 const express = require('express');
+const serverless = require('serverless-http');
 const session = require('express-session');
 const proxy = require('http-proxy-middleware');
 const bodyParser = require('body-parser');
@@ -180,3 +181,5 @@ if (process.env.NODE_ENV === 'development') {
 		console.log('App listening on port ' + (process.env.PORT || 3003));
 	});
 }
+
+module.exports.handler = serverless(app);
