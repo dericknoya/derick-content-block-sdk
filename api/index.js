@@ -127,17 +127,5 @@ app.post('/login', async (req, res, next) => {
 const serverless = require('serverless-http');
 module.exports = serverless(app);
 
-// Local development
-if (process.env.NODE_ENV === 'development') {
-	https.createServer({
-		key: fs.readFileSync('server.key'),
-		cert: fs.readFileSync('server.cert'),
-	}, app).listen(process.env.PORT || 3003, () => {
-		console.log('App listening on port ' + (process.env.PORT || 3003));
-	});
-} else {
-	// Fallback server
-	app.listen(process.env.PORT || 3003, () => {
-		console.log('App listening on port ' + (process.env.PORT || 3003));
-	});
-}
+// Vercel automatically manages the server in a serverless environment,
+// so we do not need to explicitly set a port or start the server manually.
