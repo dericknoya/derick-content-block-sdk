@@ -132,12 +132,12 @@ if (process.env.NODE_ENV === 'development') {
 	https.createServer({
 		key: fs.readFileSync('server.key'),
 		cert: fs.readFileSync('server.cert'),
-	}, app).listen(process.env.PORT || 3003, () => {
-		console.log('App listening on port ' + (process.env.PORT || 3003));
+	}, app).listen(process.env.PORT || 3000, () => {
+		console.log('App listening on port ' + (process.env.PORT || 3000));
 	});
 } else {
 	// Fallback server
-	app.listen(process.env.PORT || 3003, () => {
-		console.log('App listening on port ' + (process.env.PORT || 3003));
+	app.listen(process.env.PORT || 3000, () => {
+		console.log('App listening on port ' + (process.env.PORT || 3000));
 	});
 }
