@@ -12,8 +12,8 @@
     "url": "git+https://github.com/vargasd/tdxdemoblock.git"
   },
   "engines": {
-    "npm": "5.8.0",
-    "node": "8.9.4"
+    "npm": "10.x",
+    "node": "20.x"
   },
   "author": "Sam Varga",
   "license": "ISC",
