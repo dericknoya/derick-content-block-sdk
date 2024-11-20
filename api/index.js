@@ -28,7 +28,7 @@ app.get(['/block/:assetId(\d+)', '/'], (req, res) => {
     }
 
     // Mock API call to Salesforce for asset data (replace with real API)
-    axios.get(`https://your-marketing-cloud-instance/asset/v1/content/assets/${assetId}`)
+    axios.get(`https://mcrqbn2cd382pvnr8mnczbsrx5n8.rest.marketingcloudapis.com/asset/v1/content/assets/${assetId}`)
         .then(response => {
             res.json(response.data);
         })
@@ -48,7 +48,7 @@ app.post('/block/:assetId(\d+)', (req, res) => {
     }
 
     // Mock save to Salesforce (replace with actual API call)
-    axios.post(`https://your-marketing-cloud-instance/asset/v1/content/assets/${assetId}`, { data })
+    axios.post(`https://mcrqbn2cd382pvnr8mnczbsrx5n8.rest.marketingcloudapis.com/asset/v1/content/assets/${assetId}`, { data })
         .then(() => {
             res.status(200).send({ success: true, message: 'Asset updated successfully.' });
         })
