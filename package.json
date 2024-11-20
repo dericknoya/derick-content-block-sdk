@@ -29,7 +29,6 @@
     "dotenv": "^8.0.0",
     "file-loader": "^6.2.0",
     "style-loader": "^0.23.1",
-    "url-loader": "^1.1.2",
     "webpack": "^5.96.1",
     "webpack-cli": "^4.0.0"
   }
