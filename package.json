@@ -16,21 +16,21 @@
     "axios": "^1.7.7",
     "blocksdk": "^1.1.1",
     "body-parser": "^1.18.3",
-    "ejs": "^2.6.1",
+    "ejs": "^3.1.10",
     "express": "^4.16.4",
     "express-session": "^1.16.1",
-    "http-proxy-middleware": "^0.19.1",
+    "http-proxy-middleware": "^3.0.3",
     "jwt-simple": "^0.5.6",
     "request": "^2.88.0",
     "serverless-http": "^3.2.0"
   },
   "devDependencies": {
-    "css-loader": "^2.1.1",
+    "css-loader": "^7.1.2",
     "dotenv": "^8.0.0",
-    "file-loader": "^3.0.1",
+    "file-loader": "^6.2.0",
     "style-loader": "^0.23.1",
     "url-loader": "^1.1.2",
-    "webpack": "^4.31.0",
+    "webpack": "^5.96.1",
     "webpack-cli": "^4.0.0"
   }
 }

@@ -1,3 +1,4 @@
+
 import './components/templating-block-app';
 import SDK from 'blocksdk';
 import { getHtml, parseTemplate } from './lib/templating-block-utils';
@@ -6,69 +7,56 @@ import { getBlock } from './lib/api';
 const sdk = new SDK();
 
 function initializeApp(data) {
-	const app = document.createElement('templating-block-app');
-	app.locked = data.locked;
-	if (data.template) {
-		app.assetId = data.template.id;
-	}
+    const app = document.createElement('templating-block-app');
+    app.locked = data.locked || false;
 
-	// respond to app changes
-	app.addEventListener('change', e => {
-		// always get current data
-		sdk.getData(blockData => {
-			const newBlockData = blockData;
+    if (data.template) {
+        app.assetId = data.template.id;
+    } else {
+        console.error("Template data is missing. Verify assetId or initialization.");
+    }
 
-			// extend current data with new data
-			switch (e.detail.type) {
-				case 'template':
-					newBlockData.template = e.detail.template;
-					newBlockData.fields = parseTemplate(newBlockData.template);
-					app.fields = newBlockData.fields;
-					break;
-				case 'fields':
-					newBlockData.fields = e.detail.fields;
-					break;
-				default:
-					break;
-			}
+    // Respond to app changes
+    app.addEventListener('change', e => {
+        sdk.getData(blockData => {
+            const newBlockData = { ...blockData };
 
-			setEverything(newBlockData);
-		});
-	});
+            // Update block data based on event type
+            switch (e.detail.type) {
+                case 'template':
+                    newBlockData.template = e.detail.template;
+                    newBlockData.fields = parseTemplate(newBlockData.template);
+                    app.fields = newBlockData.fields;
+                    break;
+                case 'fields':
+                    newBlockData.fields = e.detail.fields;
+                    break;
+                default:
+                    console.warn("Unhandled event type:", e.detail.type);
+                    break;
+            }
 
-	document.getElementById('workspace').appendChild(app);
-	app.fields = data.fields;
+            // Save updated data back to SDK
+            sdk.setData(newBlockData);
+        });
+    });
+
+    document.getElementById('workspace').appendChild(app);
 }
 
-function setEverything(data) {
-	// always set data with latest
-	sdk.setData(data);
-	// set content with latest changes
-	sdk.setContent(getHtml(data.template, data.fields, false));
-	// update preview to use latest, with placeholders for preview
-	sdk.setSuperContent(getHtml(data.template, data.fields, true));
-}
-
-async function getOverrideData(data, assetId) {
-	data.template = await getBlock(assetId);
-	data.fields = parseTemplate(data.template).map((field, idx) => {
-		return {
-			...field,
-			value: data.fields && data.fields[idx] && data.fields[idx].value || ''
-		};
-	});
-	data.locked = true;
-
-	return data;
-}
-
-sdk.getData(async (data) => {
-	if (window.app.assetId) {
-		const overrideData = await getOverrideData(data, window.app.assetId);
-		setEverything(overrideData);
-	}
-
-	initializeApp(data);
+// Initialize the app with data from SDK
+sdk.getData(data => {
+    if (!data) {
+        console.error("Failed to retrieve initial data. Ensure block is configured correctly.");
+        return;
+    }
+    initializeApp(data);
 });
 
-sdk.triggerAuth(window.app.appID);
+sdk.getAssetId(assetId => {
+    if (!assetId) {
+        console.warn("Asset ID is undefined. Ensure assetId is provided in the block configuration.");
+    } else {
+        console.log("Loaded Asset ID:", assetId);
+    }
+});
