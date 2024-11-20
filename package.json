@@ -1,34 +1,44 @@
 {
-  "name": "derick-content-block-sdk",
-  "version": "1.0.0",
-  "description": "Sample Salesforce Marketing Cloud Content Builder Block using the [blocksdk](https://github.com/salesforce-marketingcloud/blocksdk) and SSO OAuth.",
-  "main": "api/index.js",
+  "name": "tdxdemoblock",
+  "version": "0.0.1",
+  "description": "BlockSDK demo block for TDX 2019 - Block Template Configuration",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack",
-    "start": "node api/index.js"
+    "build": "webpack"
   },
-  "keywords": [],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vargasd/tdxdemoblock.git"
+  },
+  "engines": {
+    "npm": "5.8.0",
+    "node": "8.9.4"
+  },
+  "author": "Sam Varga",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vargasd/tdxdemoblock/issues"
+  },
+  "homepage": "https://github.com/vargasd/tdxdemoblock",
   "dependencies": {
     "@salesforce-ux/design-system": "^2.9.2",
-    "axios": "^1.7.7",
     "blocksdk": "^1.1.1",
-    "body-parser": "^1.18.3",
+    "body-parser": "^1.20.3",
     "ejs": "^3.1.10",
-    "express": "^4.16.4",
+    "express": "^4.21.1",
     "express-session": "^1.16.1",
     "http-proxy-middleware": "^3.0.3",
     "jwt-simple": "^0.5.6",
-    "request": "^2.88.0",
-    "serverless-http": "^3.2.0"
+    "request": "^2.88.2",
+    "session": "^0.1.0"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
-    "dotenv": "^8.0.0",
+    "dotenv": "^8.6.0",
     "file-loader": "^6.2.0",
     "style-loader": "^0.23.1",
+    "url-loader": "^1.1.2",
     "webpack": "^5.96.1",
     "webpack-cli": "^4.0.0"
   }

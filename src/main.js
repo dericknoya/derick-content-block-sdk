@@ -1,4 +1,3 @@
-
 import './components/templating-block-app';
 import SDK from 'blocksdk';
 import { getHtml, parseTemplate } from './lib/templating-block-utils';
@@ -7,56 +6,69 @@ import { getBlock } from './lib/api';
 const sdk = new SDK();
 
 function initializeApp(data) {
-    const app = document.createElement('templating-block-app');
-    app.locked = data.locked || false;
+	const app = document.createElement('templating-block-app');
+	app.locked = data.locked;
+	if (data.template) {
+		app.assetId = data.template.id;
+	}
 
-    if (data.template) {
-        app.assetId = data.template.id;
-    } else {
-        console.error("Template data is missing. Verify assetId or initialization.");
-    }
+	// respond to app changes
+	app.addEventListener('change', e => {
+		// always get current data
+		sdk.getData(blockData => {
+			const newBlockData = blockData;
 
-    // Respond to app changes
-    app.addEventListener('change', e => {
-        sdk.getData(blockData => {
-            const newBlockData = { ...blockData };
+			// extend current data with new data
+			switch (e.detail.type) {
+				case 'template':
+					newBlockData.template = e.detail.template;
+					newBlockData.fields = parseTemplate(newBlockData.template);
+					app.fields = newBlockData.fields;
+					break;
+				case 'fields':
+					newBlockData.fields = e.detail.fields;
+					break;
+				default:
+					break;
+			}
 
-            // Update block data based on event type
-            switch (e.detail.type) {
-                case 'template':
-                    newBlockData.template = e.detail.template;
-                    newBlockData.fields = parseTemplate(newBlockData.template);
-                    app.fields = newBlockData.fields;
-                    break;
-                case 'fields':
-                    newBlockData.fields = e.detail.fields;
-                    break;
-                default:
-                    console.warn("Unhandled event type:", e.detail.type);
-                    break;
-            }
+			setEverything(newBlockData);
+		});
+	});
 
-            // Save updated data back to SDK
-            sdk.setData(newBlockData);
-        });
-    });
-
-    document.getElementById('workspace').appendChild(app);
+	document.getElementById('workspace').appendChild(app);
+	app.fields = data.fields;
 }
 
-// Initialize the app with data from SDK
-sdk.getData(data => {
-    if (!data) {
-        console.error("Failed to retrieve initial data. Ensure block is configured correctly.");
-        return;
-    }
-    initializeApp(data);
+function setEverything(data) {
+	// always set data with latest
+	sdk.setData(data);
+	// set content with latest changes
+	sdk.setContent(getHtml(data.template, data.fields, false));
+	// update preview to use latest, with placeholders for preview
+	sdk.setSuperContent(getHtml(data.template, data.fields, true));
+}
+
+async function getOverrideData(data, assetId) {
+	data.template = await getBlock(assetId);
+	data.fields = parseTemplate(data.template).map((field, idx) => {
+		return {
+			...field,
+			value: data.fields && data.fields[idx] && data.fields[idx].value || ''
+		};
+	});
+	data.locked = true;
+
+	return data;
+}
+
+sdk.getData(async (data) => {
+	if (window.app.assetId) {
+		const overrideData = await getOverrideData(data, window.app.assetId);
+		setEverything(overrideData);
+	}
+
+	initializeApp(data);
 });
 
-sdk.getAssetId(assetId => {
-    if (!assetId) {
-        console.warn("Asset ID is undefined. Ensure assetId is provided in the block configuration.");
-    } else {
-        console.log("Loaded Asset ID:", assetId);
-    }
-});
+sdk.triggerAuth(window.app.appID);
