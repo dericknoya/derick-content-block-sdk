@@ -1,5 +1,5 @@
 {
-  "name": "Derick BlockSDK",
+  "name": "derickblocksdk",
   "version": "0.0.1",
   "description": "Derick BlockSDK",
   "main": "index.js",
@@ -26,6 +26,7 @@
     "session": "^0.1.0"
   },
   "devDependencies": {
+    "@salesforce-ux/design-system": "^2.25.3",
     "css-loader": "^7.1.2",
     "dotenv": "^16.4.5",
     "file-loader": "^6.2.0",
