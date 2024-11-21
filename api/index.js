@@ -80,9 +80,10 @@ app.use(
 );
 
 // Serve static assets
-app.use('/public', express.static('../dist'));
-app.use('*/icon.png', express.static('../dist/icon.png'));
-app.use('*/dragIcon.png', express.static('../dist/dragIcon.png'));
+
+app.use('/dist', express.static(path.join(__dirname, '../dist')));
+app.use('*/icon.png', express.static(path.join(__dirname, '../dist/icon.png')));
+app.use('*/dragIcon.png', express.static(path.join(__dirname, '../dist/dragIcon.png')));
 app.use('/assets', express.static(path.join(__dirname, '../node_modules/@salesforce-ux/design-system/assets')));
 
 
