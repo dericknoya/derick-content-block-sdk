@@ -1,6 +1,6 @@
 const express = require('express');
 const session = require('express-session');
-const { createProxyMiddleware } = require('http-proxy-middleware'); // Fixed import
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const bodyParser = require('body-parser');
 const jwt = require('jwt-simple');
 const request = require('request');
@@ -9,7 +9,7 @@ const fs = require('fs');
 const https = require('https');
 
 if (process.env.NODE_ENV === 'development') {
-	require('dotenv').config();
+    require('dotenv').config();
 }
 
 // Environment variables
@@ -20,37 +20,37 @@ const appID = process.env.APP_ID;
 const authEmitter = new EventEmitter();
 
 function waitForAuth(req, ttl) {
-	return new Promise(function (resolve, reject) {
-		const timeout = setTimeout(() => {
-			removeListener();
-			reject('auth timeout expired');
-		}, ttl);
+    return new Promise(function (resolve, reject) {
+        const timeout = setTimeout(() => {
+            removeListener();
+            reject('auth timeout expired');
+        }, ttl);
 
-		const listener = function (authData) {
-			if (authData.sessionID === req.sessionID) {
-				req.session.accessToken = authData.accessToken;
-				clearTimeout(timeout);
-				removeListener();
-				resolve();
-			}
-		};
+        const listener = function (authData) {
+            if (authData.sessionID === req.sessionID) {
+                req.session.accessToken = authData.accessToken;
+                clearTimeout(timeout);
+                removeListener();
+                resolve();
+            }
+        };
 
-		const removeListener = function () {
-			authEmitter.removeListener('authed', listener);
-		};
+        const removeListener = function () {
+            authEmitter.removeListener('authed', listener);
+        };
 
-		authEmitter.addListener('authed', listener);
-	});
+        authEmitter.addListener('authed', listener);
+    });
 }
 
 function verifyAuth(req, res, next) {
-	if (req.session && req.session.accessToken) {
-		return next();
-	}
+    if (req.session && req.session.accessToken) {
+        return next();
+    }
 
-	waitForAuth(req, 10000)
-		.then(next)
-		.catch(() => res.sendStatus(401));
+    waitForAuth(req, 10000)
+        .then(next)
+        .catch(() => res.sendStatus(401));
 }
 
 const app = express();
@@ -61,16 +61,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Session management
 app.use(
-	session({
-		name: 'mcisv',
-		secret: 'my-app-super-secret-session-token',
-		cookie: {
-			maxAge: 1000 * 60 * 60 * 24,
-			secure: false,
-		},
-		saveUninitialized: true,
-		resave: false,
-	})
+    session({
+        name: 'mcisv',
+        secret: 'my-app-super-secret-session-token',
+        cookie: {
+            maxAge: 1000 * 60 * 60 * 24,
+            secure: false,
+        },
+        saveUninitialized: true,
+        resave: false,
+    })
 );
 
 // Serve static assets
@@ -81,88 +81,70 @@ app.use('/assets', express.static('node_modules/@salesforce-ux/design-system/ass
 
 // Render block with assetId
 app.get(['/', '/block/:assetId(\\d+)'], (req, res) => {
-	res.render('index', {
-		app: JSON.stringify({
-			appID,
-			...req.params,
-		}),
-	});
+    res.render('index', {
+        app: JSON.stringify({
+            appID,
+            ...req.params,
+        }),
+    });
 });
 
 // Proxy middleware for API calls
 app.use(
-	'/proxy',
-	verifyAuth,
-	createProxyMiddleware({
-		logLevel: 'debug',
-		changeOrigin: true,
-		target: 'https://www.exacttargetapis.com/',
-		onError: console.log,
-		protocolRewrite: 'https',
-		pathRewrite: {
-			'^/proxy': '',
-		},
-		secure: false,
-		onProxyReq: (proxyReq, req, res) => {
-			if (!req.session || !req.session.accessToken) {
-				res.sendStatus(401);
-			}
-			proxyReq.setHeader('Authorization', `Bearer ${req.session.accessToken}`);
-			proxyReq.setHeader('Content-Type', 'application/json');
-		},
-	})
+    '/proxy',
+    verifyAuth,
+    createProxyMiddleware({
+        logLevel: 'debug',
+        changeOrigin: true,
+        target: 'https://www.exacttargetapis.com/',
+        onError: console.log,
+        protocolRewrite: 'https',
+        pathRewrite: {
+            '^/proxy': '',
+        },
+        secure: false,
+        onProxyReq: (proxyReq, req, res) => {
+            if (!req.session || !req.session.accessToken) {
+                res.sendStatus(401);
+            }
+            proxyReq.setHeader('Authorization', `Bearer ${req.session.accessToken}`);
+            proxyReq.setHeader('Content-Type', 'application/json');
+        },
+    })
 );
 
 // Login endpoint for JWT decoding and token exchange
 app.post('/login', (req, res, next) => {
-	const encodedJWT = req.body.jwt;
-	const decodedJWT = jwt.decode(encodedJWT, secret);
-	const restInfo = decodedJWT.request.rest;
+    const encodedJWT = req.body.jwt;
+    const decodedJWT = jwt.decode(encodedJWT, secret);
+    const restInfo = decodedJWT.request.rest;
 
-	request.post(
-		restInfo.authEndpoint,
-		{
-			form: {
-				clientId: clientId,
-				clientSecret: clientSecret,
-				refreshToken: restInfo.refreshToken,
-				accessType: 'offline',
-			},
-		},
-		(error, response, body) => {
-			if (!error && response.statusCode === 200) {
-				const result = JSON.parse(body);
-				req.session.refreshToken = result.refreshToken;
-				req.session.accessToken = result.accessToken;
-				req.session.save();
-				authEmitter.emit('authed', {
-					sessionID: req.sessionID,
-					accessToken: result.accessToken,
-				});
-			}
-			res.redirect('/');
-			next();
-		}
-	);
+    request.post(
+        restInfo.authEndpoint,
+        {
+            form: {
+                clientId: clientId,
+                clientSecret: clientSecret,
+                refreshToken: restInfo.refreshToken,
+                accessType: 'offline',
+            },
+        },
+        (error, response, body) => {
+            if (!error && response.statusCode === 200) {
+                const result = JSON.parse(body);
+                req.session.refreshToken = result.refreshToken;
+                req.session.accessToken = result.accessToken;
+                req.session.save();
+                authEmitter.emit('authed', {
+                    sessionID: req.sessionID,
+                    accessToken: result.accessToken,
+                });
+            }
+            res.redirect('/');
+            next();
+        }
+    );
 });
 
-// HTTPS in development mode
-if (process.env.NODE_ENV === 'development') {
-	https
-		.createServer(
-			{
-				key: fs.readFileSync('server.key'),
-				cert: fs.readFileSync('server.cert'),
-			},
-			app
-		)
-		.listen(process.env.PORT || 3003, () => {
-			console.log('App listening on port ' + (process.env.PORT || 3003));
-		});
-} else {
-	// HTTP in production
-	app.listen(process.env.PORT || 3003, () => {
-		console.log('App listening on port ' + (process.env.PORT || 3003));
-	});
-}
-
+// Export the Express app for Vercel
+module.exports = app;
