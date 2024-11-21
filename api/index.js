@@ -20,6 +20,8 @@ const clientSecret = process.env.CLIENT_SECRET;
 const appID = process.env.APP_ID;
 const authEmitter = new EventEmitter();
 
+
+
 function waitForAuth(req, ttl) {
     return new Promise(function (resolve, reject) {
         const timeout = setTimeout(() => {
@@ -81,7 +83,9 @@ app.use(
 app.use('/public', express.static('dist'));
 app.use('*/icon.png', express.static('dist/icon.png'));
 app.use('*/dragIcon.png', express.static('dist/dragIcon.png'));
-app.use('/assets', express.static('node_modules/@salesforce-ux/design-system/assets'));
+// app.use('/assets', express.static('node_modules/@salesforce-ux/design-system/assets'));
+app.use('/assets', express.static(path.join(__dirname, '../node_modules/@salesforce-ux/design-system/assets')));
+
 
 // Render block with assetId
 app.get(['/', '/block/:assetId(\\d+)'], (req, res) => {

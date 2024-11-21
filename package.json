@@ -1,23 +1,20 @@
 {
-  "name": "tdxdemoblock",
+  "name": "Derick BlockSDK",
   "version": "0.0.1",
-  "description": "BlockSDK demo block for TDX 2019 - Block Template Configuration",
+  "description": "Derick BlockSDK",
   "main": "index.js",
   "scripts": {
     "start": "node api/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/vargasd/tdxdemoblock.git"
-  },
   "engines": {
     "npm": "10.x",
     "node": "20.x"
   },
   "dependencies": {
-    "@salesforce-ux/design-system": "^2.9.2",
+    "20": "^1.0.0",
+    "@salesforce-ux/design-system": "^2.25.3",
     "blocksdk": "^1.1.1",
     "body-parser": "^1.20.3",
     "ejs": "^3.1.10",
