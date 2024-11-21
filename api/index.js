@@ -1,13 +1,13 @@
 const express = require('express');
 const session = require('express-session');
-const { createProxyMiddleware } = require('http-proxy-middleware'); // Fixed import
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const bodyParser = require('body-parser');
 const jwt = require('jwt-simple');
 const request = require('request');
 const EventEmitter = require('events').EventEmitter;
 const fs = require('fs');
 const https = require('https');
-const path = require('path'); // Added for setting views directory
+const path = require('path');
 
 if (process.env.NODE_ENV === 'development') {
     require('dotenv').config();
@@ -57,7 +57,7 @@ function verifyAuth(req, res, next) {
 const app = express();
 
 // Set views directory explicitly
-app.set('views', path.join(__dirname, '../views')); // Ensure this path matches your project structure
+app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'ejs');
 
 // Body parser for POST
@@ -150,5 +150,17 @@ app.post('/login', (req, res, next) => {
     );
 });
 
-// Export the Express app for Vercel
+// HTTPS setup for local development
+if (process.env.NODE_ENV === 'development') {
+    const httpsOptions = {
+        key: fs.readFileSync('server.key'),
+        cert: fs.readFileSync('server.cert'),
+    };
+
+    https.createServer(httpsOptions, app).listen(process.env.PORT || 3003, () => {
+        console.log('App listening securely on port ' + (process.env.PORT || 3003));
+    });
+}
+
+// Export the Express app for Vercel compatibility
 module.exports = app;
