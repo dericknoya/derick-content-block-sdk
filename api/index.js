@@ -48,10 +48,15 @@ function verifyAuth(req, res, next) {
     if (req.session && req.session.accessToken) {
         return next();
     }
+
     console.log('Access token missing, waiting for auth...');
+
     waitForAuth(req, 10000)
         .then(next)
-        .catch(() => res.sendStatus(401));
+        .catch(() => {
+            console.log('Auth timeout expired, unauthorized access.');
+            res.sendStatus(401);
+        });
 }
 
 const app = express();
@@ -76,6 +81,12 @@ app.use(
         resave: false,
     })
 );
+
+// Debug session handling
+app.use((req, res, next) => {
+    console.log('Current session:', req.session);
+    next();
+});
 
 // Serve static assets
 app.use('/dist', express.static(path.join(__dirname, '../dist')));
@@ -109,7 +120,7 @@ app.use('/proxy',
     createProxyMiddleware({
         logLevel: 'debug',
         changeOrigin: true,
-        target: 'https://www.exacttargetapis.com/',
+        target: 'https://mcrqbn2cd382pvnr8mnczbsrx5n8.rest.marketingcloudapis.com/',
         onError: (err) => console.error('Proxy error:', err),
         pathRewrite: { '^/proxy': '' },
         secure: false,
