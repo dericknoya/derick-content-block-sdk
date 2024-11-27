@@ -20,8 +20,6 @@ const clientSecret = process.env.CLIENT_SECRET;
 const appID = process.env.APP_ID;
 const authEmitter = new EventEmitter();
 
-
-
 function waitForAuth(req, ttl) {
     return new Promise(function (resolve, reject) {
         const timeout = setTimeout(() => {
@@ -50,7 +48,7 @@ function verifyAuth(req, res, next) {
     if (req.session && req.session.accessToken) {
         return next();
     }
-
+    console.log('Access token missing, waiting for auth...');
     waitForAuth(req, 10000)
         .then(next)
         .catch(() => res.sendStatus(401));
@@ -69,10 +67,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
     session({
         name: 'mcisv',
-        secret: 'my-app-super-secret-session-token',
+        secret: process.env.SESSION_SECRET || 'my-app-super-secret-session-token',
         cookie: {
             maxAge: 1000 * 60 * 60 * 24,
-            secure: false,
+            secure: process.env.NODE_ENV === 'production',
         },
         saveUninitialized: true,
         resave: false,
@@ -80,7 +78,6 @@ app.use(
 );
 
 // Serve static assets
-
 app.use('/dist', express.static(path.join(__dirname, '../dist')));
 app.use('*/icon.png', express.static(path.join(__dirname, '../dist/icon.png')));
 app.use('*/favicon.png', express.static(path.join(__dirname, '../dist/favicon.png')));
@@ -88,9 +85,12 @@ app.use('*/favicon.ico', express.static(path.join(__dirname, '../dist/favicon.ic
 app.use('*/dragIcon.png', express.static(path.join(__dirname, '../dist/dragIcon.png')));
 app.use('/assets', express.static(path.join(__dirname, '../node_modules/@salesforce-ux/design-system/assets')));
 
-
 // Render block with assetId
 app.get(['/', '/block/:assetId(\\d+)'], (req, res) => {
+    console.log('Rendering index with app:', {
+        appID,
+        ...req.params,
+    });
     res.render('index', {
         app: JSON.stringify({
             appID,
@@ -101,36 +101,37 @@ app.get(['/', '/block/:assetId(\\d+)'], (req, res) => {
 
 // Proxy middleware for API calls
 app.use('/proxy',
-	(req, res, next) => {
-		console.log(`Proxy request received: ${req.method} ${req.url}`);
-		next();
-	},
-	verifyAuth,
-	createProxyMiddleware({
-		logLevel: 'debug',
-		changeOrigin: true,
-		target: 'https://mcrqbn2cd382pvnr8mnczbsrx5n8.rest.marketingcloudapis.com/',
-		onError: (err) => console.error('Proxy error:', err),
-		pathRewrite: { '^/proxy': '' },
-		secure: false,
-		onProxyReq: (proxyReq, req, res) => {
-			if (!req.session || !req.session.accessToken) {
-				console.error('Missing accessToken');
-				return res.sendStatus(401);
-			}
-			console.log('Proxying with accessToken:', req.session.accessToken);
-			proxyReq.setHeader('Authorization', `Bearer ${req.session.accessToken}`);
-			proxyReq.setHeader('Content-Type', 'application/json');
-		},
-	})
+    (req, res, next) => {
+        console.log(`Proxy request received: ${req.method} ${req.url}`);
+        next();
+    },
+    verifyAuth,
+    createProxyMiddleware({
+        logLevel: 'debug',
+        changeOrigin: true,
+        target: 'https://mcrqbn2cd382pvnr8mnczbsrx5n8.rest.marketingcloudapis.com/',
+        onError: (err) => console.error('Proxy error:', err),
+        pathRewrite: { '^/proxy': '' },
+        secure: false,
+        onProxyReq: (proxyReq, req, res) => {
+            if (!req.session || !req.session.accessToken) {
+                console.error('Missing accessToken');
+                return res.sendStatus(401);
+            }
+            console.log('Proxying with accessToken:', req.session.accessToken);
+            proxyReq.setHeader('Authorization', `Bearer ${req.session.accessToken}`);
+            proxyReq.setHeader('Content-Type', 'application/json');
+        },
+    })
 );
-
 
 // Login endpoint for JWT decoding and token exchange
 app.post('/login', (req, res, next) => {
     const encodedJWT = req.body.jwt;
     const decodedJWT = jwt.decode(encodedJWT, secret);
     const restInfo = decodedJWT.request.rest;
+
+    console.log('Decoding JWT:', decodedJWT);
 
     request.post(
         restInfo.authEndpoint,
@@ -145,13 +146,21 @@ app.post('/login', (req, res, next) => {
         (error, response, body) => {
             if (!error && response.statusCode === 200) {
                 const result = JSON.parse(body);
+                console.log('Login successful, setting session:', result);
                 req.session.refreshToken = result.refreshToken;
                 req.session.accessToken = result.accessToken;
-                req.session.save();
-                authEmitter.emit('authed', {
-                    sessionID: req.sessionID,
-                    accessToken: result.accessToken,
+                req.session.save((err) => {
+                    if (err) {
+                        console.error('Error saving session:', err);
+                    } else {
+                        authEmitter.emit('authed', {
+                            sessionID: req.sessionID,
+                            accessToken: result.accessToken,
+                        });
+                    }
                 });
+            } else {
+                console.error('Failed to authenticate:', error || body);
             }
             res.redirect('/');
             next();
@@ -166,7 +175,7 @@ if (process.env.NODE_ENV === 'development') {
         cert: fs.readFileSync('server.cert'),
     };
 
-    https.createServer(httpsOptions, app).listen(process.env.PORT || 3003, () => {
+    https.createServer(httpsOptions, app).listen(process.env.PORT || 3000, () => {
         console.log('App listening securely on port ' + (process.env.PORT || 3003));
     });
 }
