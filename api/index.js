@@ -98,28 +98,31 @@ app.get(['/', '/block/:assetId(\\d+)'], (req, res) => {
 });
 
 // Proxy middleware for API calls
-app.use(
-    '/proxy',
-    verifyAuth,
-    createProxyMiddleware({
-        logLevel: 'debug',
-        changeOrigin: true,
-        target: 'https://www.exacttargetapis.com/',
-        onError: console.log,
-        protocolRewrite: 'https',
-        pathRewrite: {
-            '^/proxy': '',
-        },
-        secure: false,
-        onProxyReq: (proxyReq, req, res) => {
-            if (!req.session || !req.session.accessToken) {
-                res.sendStatus(401);
-            }
-            proxyReq.setHeader('Authorization', `Bearer ${req.session.accessToken}`);
-            proxyReq.setHeader('Content-Type', 'application/json');
-        },
-    })
+app.use('/proxy',
+	(req, res, next) => {
+		console.log(`Proxy request received: ${req.method} ${req.url}`);
+		next();
+	},
+	verifyAuth,
+	createProxyMiddleware({
+		logLevel: 'debug',
+		changeOrigin: true,
+		target: 'https://mcrqbn2cd382pvnr8mnczbsrx5n8.rest.marketingcloudapis.com/',
+		onError: (err) => console.error('Proxy error:', err),
+		pathRewrite: { '^/proxy': '' },
+		secure: false,
+		onProxyReq: (proxyReq, req, res) => {
+			if (!req.session || !req.session.accessToken) {
+				console.error('Missing accessToken');
+				return res.sendStatus(401);
+			}
+			console.log('Proxying with accessToken:', req.session.accessToken);
+			proxyReq.setHeader('Authorization', `Bearer ${req.session.accessToken}`);
+			proxyReq.setHeader('Content-Type', 'application/json');
+		},
+	})
 );
+
 
 // Login endpoint for JWT decoding and token exchange
 app.post('/login', (req, res, next) => {
