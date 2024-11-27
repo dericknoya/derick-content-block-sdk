@@ -109,7 +109,7 @@ app.use('/proxy',
     createProxyMiddleware({
         logLevel: 'debug',
         changeOrigin: true,
-        target: 'https://mcrqbn2cd382pvnr8mnczbsrx5n8.rest.marketingcloudapis.com/',
+        target: 'https://www.exacttargetapis.com/',
         onError: (err) => console.error('Proxy error:', err),
         pathRewrite: { '^/proxy': '' },
         secure: false,
