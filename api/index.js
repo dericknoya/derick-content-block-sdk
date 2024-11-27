@@ -83,6 +83,8 @@ app.use(
 
 app.use('/dist', express.static(path.join(__dirname, '../dist')));
 app.use('*/icon.png', express.static(path.join(__dirname, '../dist/icon.png')));
+app.use('*/favicon.png', express.static(path.join(__dirname, '../dist/favicon.png')));
+app.use('*/favicon.ico', express.static(path.join(__dirname, '../dist/favicon.ico')));
 app.use('*/dragIcon.png', express.static(path.join(__dirname, '../dist/dragIcon.png')));
 app.use('/assets', express.static(path.join(__dirname, '../node_modules/@salesforce-ux/design-system/assets')));
 
