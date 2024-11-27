@@ -48,15 +48,10 @@ function verifyAuth(req, res, next) {
     if (req.session && req.session.accessToken) {
         return next();
     }
-
     console.log('Access token missing, waiting for auth...');
-
     waitForAuth(req, 10000)
         .then(next)
-        .catch(() => {
-            console.log('Auth timeout expired, unauthorized access.');
-            res.sendStatus(401);
-        });
+        .catch(() => res.sendStatus(401));
 }
 
 const app = express();
@@ -67,6 +62,7 @@ app.set('view engine', 'ejs');
 
 // Body parser for POST
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 // Session management
 app.use(
@@ -82,12 +78,6 @@ app.use(
     })
 );
 
-// Debug session handling
-app.use((req, res, next) => {
-    console.log('Current session:', req.session);
-    next();
-});
-
 // Serve static assets
 app.use('/dist', express.static(path.join(__dirname, '../dist')));
 app.use('*/icon.png', express.static(path.join(__dirname, '../dist/icon.png')));
@@ -97,7 +87,7 @@ app.use('*/dragIcon.png', express.static(path.join(__dirname, '../dist/dragIcon.
 app.use('/assets', express.static(path.join(__dirname, '../node_modules/@salesforce-ux/design-system/assets')));
 
 // Render block with assetId
-app.get(['/', '/block/:assetId(\\d+)'], (req, res) => {
+app.get(['/', '/block/:assetId(\d+)'], (req, res) => {
     console.log('Rendering index with app:', {
         appID,
         ...req.params,
@@ -138,45 +128,57 @@ app.use('/proxy',
 
 // Login endpoint for JWT decoding and token exchange
 app.post('/login', (req, res, next) => {
+    console.log('Request body:', req.body);
+
     const encodedJWT = req.body.jwt;
-    const decodedJWT = jwt.decode(encodedJWT, secret);
-    const restInfo = decodedJWT.request.rest;
+    if (!encodedJWT) {
+        console.error('No JWT supplied in request body');
+        return res.status(400).send('JWT is required');
+    }
 
-    console.log('Decoding JWT:', decodedJWT);
+    try {
+        const decodedJWT = jwt.decode(encodedJWT, secret);
+        console.log('Decoded JWT:', decodedJWT);
 
-    request.post(
-        restInfo.authEndpoint,
-        {
-            form: {
-                clientId: clientId,
-                clientSecret: clientSecret,
-                refreshToken: restInfo.refreshToken,
-                accessType: 'offline',
+        const restInfo = decodedJWT.request.rest;
+
+        request.post(
+            restInfo.authEndpoint,
+            {
+                form: {
+                    clientId: clientId,
+                    clientSecret: clientSecret,
+                    refreshToken: restInfo.refreshToken,
+                    accessType: 'offline',
+                },
             },
-        },
-        (error, response, body) => {
-            if (!error && response.statusCode === 200) {
-                const result = JSON.parse(body);
-                console.log('Login successful, setting session:', result);
-                req.session.refreshToken = result.refreshToken;
-                req.session.accessToken = result.accessToken;
-                req.session.save((err) => {
-                    if (err) {
-                        console.error('Error saving session:', err);
-                    } else {
-                        authEmitter.emit('authed', {
-                            sessionID: req.sessionID,
-                            accessToken: result.accessToken,
-                        });
-                    }
-                });
-            } else {
-                console.error('Failed to authenticate:', error || body);
+            (error, response, body) => {
+                if (!error && response.statusCode === 200) {
+                    const result = JSON.parse(body);
+                    console.log('Login successful, setting session:', result);
+                    req.session.refreshToken = result.refreshToken;
+                    req.session.accessToken = result.accessToken;
+                    req.session.save((err) => {
+                        if (err) {
+                            console.error('Error saving session:', err);
+                        } else {
+                            authEmitter.emit('authed', {
+                                sessionID: req.sessionID,
+                                accessToken: result.accessToken,
+                            });
+                        }
+                    });
+                    res.redirect('/');
+                } else {
+                    console.error('Failed to authenticate:', error || body);
+                    res.status(500).send('Failed to authenticate');
+                }
             }
-            res.redirect('/');
-            next();
-        }
-    );
+        );
+    } catch (error) {
+        console.error('Error decoding JWT:', error);
+        res.status(400).send('Invalid JWT');
+    }
 });
 
 // HTTPS setup for local development
