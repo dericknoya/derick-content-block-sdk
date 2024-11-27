@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const bodyParser = require('body-parser');
-const jwt = require('jwt-simple');
+const jwt = require('jsonwebtoken'); // Switched to jsonwebtoken library
 const request = require('request');
 const EventEmitter = require('events').EventEmitter;
 const fs = require('fs');
@@ -48,6 +48,7 @@ function verifyAuth(req, res, next) {
     if (req.session && req.session.accessToken) {
         return next();
     }
+
     console.log('Access token missing, waiting for auth...');
     waitForAuth(req, 10000)
         .then(next)
@@ -68,7 +69,7 @@ app.use(bodyParser.json());
 app.use(
     session({
         name: 'mcisv',
-        secret: process.env.SESSION_SECRET || 'my-app-super-secret-session-token',
+        secret: process.env.SESSION_SECRET || 'fallback-secret-for-dev',
         cookie: {
             maxAge: 1000 * 60 * 60 * 24,
             secure: process.env.NODE_ENV === 'production',
@@ -127,17 +128,16 @@ app.use('/proxy',
 );
 
 // Login endpoint for JWT decoding and token exchange
-app.post('/login', (req, res, next) => {
-    console.log('Request body:', req.body);
-
+app.post('/login', (req, res) => {
     const encodedJWT = req.body.jwt;
+
     if (!encodedJWT) {
         console.error('No JWT supplied in request body');
         return res.status(400).send('JWT is required');
     }
 
     try {
-        const decodedJWT = jwt.decode(encodedJWT, secret);
+        const decodedJWT = jwt.verify(encodedJWT, secret); // Using jsonwebtoken to verify
         console.log('Decoded JWT:', decodedJWT);
 
         const restInfo = decodedJWT.request.rest;
@@ -177,7 +177,7 @@ app.post('/login', (req, res, next) => {
         );
     } catch (error) {
         console.error('Error decoding JWT:', error);
-        res.status(400).send('Invalid JWT');
+        return res.status(400).send('Invalid JWT');
     }
 });
 
@@ -189,7 +189,7 @@ if (process.env.NODE_ENV === 'development') {
     };
 
     https.createServer(httpsOptions, app).listen(process.env.PORT || 3000, () => {
-        console.log('App listening securely on port ' + (process.env.PORT || 3003));
+        console.log('App listening securely on port ' + (process.env.PORT || 3000));
     });
 }
 
