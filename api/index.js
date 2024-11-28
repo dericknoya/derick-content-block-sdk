@@ -126,7 +126,7 @@ app.use('/proxy',
 );
 
 // Login endpoint for JWT decoding and token exchange
-app.post('/login', (req, res, next) => {
+app.post('/login', (req, res) => {
     const encodedJWT = req.body.jwt;
 
     if (!encodedJWT) {
@@ -135,19 +135,12 @@ app.post('/login', (req, res, next) => {
     }
 
     try {
-        // Manually parse the JWT
-        const jwtParts = encodedJWT.split('.');
-        if (jwtParts.length !== 3) {
-            throw new Error('Invalid JWT format');
-        }
-
-        const decodedHeader = JSON.parse(Buffer.from(jwtParts[0], 'base64').toString());
-        const decodedPayload = JSON.parse(Buffer.from(jwtParts[1], 'base64').toString());
-
-        console.log('Decoded Header:', decodedHeader);
+        console.log('Received JWT:', encodedJWT);
+        const decodedPayload = Buffer.from(encodedJWT, 'base64').toString('utf-8');
         console.log('Decoded Payload:', decodedPayload);
 
-        const restInfo = decodedPayload.request.rest;
+        const parsedPayload = JSON.parse(decodedPayload);
+        const restInfo = parsedPayload.request.rest;
 
         // Call Salesforce authentication
         request.post(
