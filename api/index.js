@@ -85,6 +85,7 @@ app.use('*/favicon.ico', express.static(path.join(__dirname, '../dist/favicon.ic
 app.use('*/dragIcon.png', express.static(path.join(__dirname, '../dist/dragIcon.png')));
 app.use('/assets', express.static(path.join(__dirname, '../node_modules/@salesforce-ux/design-system/assets')));
 
+
 // Render block with assetId
 app.get(['/', '/block/:assetId(\d+)'], (req, res) => {
     console.log('Rendering index with app:', {
