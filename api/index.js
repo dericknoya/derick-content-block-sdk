@@ -126,7 +126,7 @@ app.use('/proxy',
 );
 
 // Login endpoint for JWT decoding and token exchange
-app.post('/login', (req, res) => {
+app.post('/login', (req, res, next) => {
     const encodedJWT = req.body.jwt;
 
     if (!encodedJWT) {
@@ -136,11 +136,23 @@ app.post('/login', (req, res) => {
 
     try {
         console.log('Received JWT:', encodedJWT);
+
+        // Decode JWT payload manually
         const decodedPayload = Buffer.from(encodedJWT, 'base64').toString('utf-8');
         console.log('Decoded Payload:', decodedPayload);
 
-        const parsedPayload = JSON.parse(decodedPayload);
-        const restInfo = parsedPayload.request.rest;
+        // Try parsing the payload as JSON
+        let payloadJSON;
+        try {
+            payloadJSON = JSON.parse(decodedPayload);
+        } catch (error) {
+            console.error('Failed to parse payload as JSON:', error);
+            return res.status(400).send('Invalid JWT payload');
+        }
+
+        console.log('Parsed Payload:', payloadJSON);
+
+        const restInfo = payloadJSON.request.rest;
 
         // Call Salesforce authentication
         request.post(
@@ -196,3 +208,4 @@ if (process.env.NODE_ENV === 'development') {
 
 // Export the Express app for Vercel compatibility
 module.exports = app;
+
