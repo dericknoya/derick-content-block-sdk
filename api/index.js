@@ -2,7 +2,6 @@ const express = require('express');
 const session = require('express-session');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const bodyParser = require('body-parser');
-const jwt = require('jsonwebtoken'); // Switched to jsonwebtoken library
 const request = require('request');
 const EventEmitter = require('events').EventEmitter;
 const fs = require('fs');
@@ -48,7 +47,6 @@ function verifyAuth(req, res, next) {
     if (req.session && req.session.accessToken) {
         return next();
     }
-
     console.log('Access token missing, waiting for auth...');
     waitForAuth(req, 10000)
         .then(next)
@@ -69,7 +67,7 @@ app.use(bodyParser.json());
 app.use(
     session({
         name: 'mcisv',
-        secret: process.env.SESSION_SECRET || 'fallback-secret-for-dev',
+        secret: process.env.SESSION_SECRET || 'my-app-super-secret-session-token',
         cookie: {
             maxAge: 1000 * 60 * 60 * 24,
             secure: process.env.NODE_ENV === 'production',
@@ -128,7 +126,7 @@ app.use('/proxy',
 );
 
 // Login endpoint for JWT decoding and token exchange
-app.post('/login', (req, res) => {
+app.post('/login', (req, res, next) => {
     const encodedJWT = req.body.jwt;
 
     if (!encodedJWT) {
@@ -137,11 +135,21 @@ app.post('/login', (req, res) => {
     }
 
     try {
-        const decodedJWT = jwt.verify(encodedJWT, secret); // Using jsonwebtoken to verify
-        console.log('Decoded JWT:', decodedJWT);
+        // Manually parse the JWT
+        const jwtParts = encodedJWT.split('.');
+        if (jwtParts.length !== 3) {
+            throw new Error('Invalid JWT format');
+        }
 
-        const restInfo = decodedJWT.request.rest;
+        const decodedHeader = JSON.parse(Buffer.from(jwtParts[0], 'base64').toString());
+        const decodedPayload = JSON.parse(Buffer.from(jwtParts[1], 'base64').toString());
 
+        console.log('Decoded Header:', decodedHeader);
+        console.log('Decoded Payload:', decodedPayload);
+
+        const restInfo = decodedPayload.request.rest;
+
+        // Call Salesforce authentication
         request.post(
             restInfo.authEndpoint,
             {
@@ -177,7 +185,7 @@ app.post('/login', (req, res) => {
         );
     } catch (error) {
         console.error('Error decoding JWT:', error);
-        return res.status(400).send('Invalid JWT');
+        res.status(400).send('Invalid JWT');
     }
 });
 
@@ -189,7 +197,7 @@ if (process.env.NODE_ENV === 'development') {
     };
 
     https.createServer(httpsOptions, app).listen(process.env.PORT || 3000, () => {
-        console.log('App listening securely on port ' + (process.env.PORT || 3000));
+        console.log('App listening securely on port ' + (process.env.PORT || 3003));
     });
 }
 
